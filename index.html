@@ -166,7 +166,7 @@ tr:hover td{background:var(--blue-pale)}
     <table><thead><tr><th>Mês</th><th>Chuva</th><th>vs. Média</th><th>Barra</th></tr></thead>
     <tbody id="tbody"></tbody></table>
   </div>
-  <div class="src">📡 <strong>Fonte:</strong> Open-Meteo API — ERA5 reanalysis (histórico) + modelo global (previsão).</div>
+  <div class="src">📡 <strong>Fonte:</strong> Open-Meteo API — ERA5 reanalysis (histórico 5 anos) + previsão real 16 dias (mês atual) + médias sazonais históricas (meses 2–6).</div>
 </div>
 
 <div class="foot">☁️ Dados via <strong>Open-Meteo</strong> · Ferramenta para planejamento agrícola<br/><a href="https://kafzin.com" target="_blank">kafzin.com</a></div>
@@ -249,7 +249,9 @@ async function loadClimate(loc){
     const fmt=d=>d.toISOString().slice(0,10);
 
     const aUrl=`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${fmt(archStart)}&end_date=${fmt(archEnd)}&daily=precipitation_sum&timezone=America%2FSao_Paulo`;
-    const fUrl=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&timezone=America%2FSao_Paulo&forecast_days=180`;
+    // Forecast: free tier max = 16 days. We use it for the current month only;
+    // remaining months use historical seasonal averages.
+    const fUrl=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&timezone=America%2FSao_Paulo&forecast_days=16`;
 
     const [aRes,fRes]=await Promise.all([fetch(aUrl),fetch(fUrl)]);
 
@@ -296,17 +298,28 @@ function processData(loc,aData,fData,now){
   });
   avg.forEach((_,i)=>{ avg[i]=cnt[i]?Math.round(avg[i]/cnt[i]):0; });
 
-  // Forecast daily → monthly
+  // Forecast: aggregate the 16 real days → partial current month total
   const fDays=fData.daily?.time||[], fVals=fData.daily?.precipitation_sum||[];
   const fMon={};
   fDays.forEach((t,i)=>{ const k=t.slice(0,7); fMon[k]=(fMon[k]||0)+(fVals[i]||0); });
 
-  // Next 6 months
+  // Next 6 months: use real forecast for month 0, historical avg for months 1-5
   const fc6=[];
   for(let m=0;m<6;m++){
     const d=new Date(now.getFullYear(),now.getMonth()+m,1);
     const k=d.toISOString().slice(0,7);
-    fc6.push({k,month:d.getMonth(),year:d.getFullYear(),val:Math.round(fMon[k]||avg[d.getMonth()])});
+    const mo=d.getMonth();
+    // Month 0: blend real 16-day forecast with avg (scale up to full month)
+    let val;
+    if(m===0 && fMon[k]){
+      // Days elapsed this month vs days in month → scale real data to full month
+      const daysInMo=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+      const daysSoFar=fDays.filter(t=>t.startsWith(k)).length;
+      val=Math.round((fMon[k]/Math.max(daysSoFar,1))*daysInMo);
+    } else {
+      val=avg[mo]; // use historical seasonal average
+    }
+    fc6.push({k,month:mo,year:d.getFullYear(),val:Math.max(val,0)});
   }
 
   // Risk
