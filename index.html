@@ -6,250 +6,106 @@
 <title>Monitor de Precipitação | Kafzin</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:        #f5f0e8;
-  --white:     #ffffff;
-  --border:    #dfd5c8;
-  --brown:     #2c1a0e;
-  --brown-mid: #5a3a24;
-  --gold:      #9a6a32;
-  --gold-lt:   #c49050;
-  --blue:      #1a5f8a;
-  --blue-lt:   #2d89c8;
-  --blue-pale: #e8f4fb;
-  --green:     #3b6332;
-  --green-lt:  #6a9e58;
-  --amber:     #c47a1a;
-  --red:       #a83228;
-  --text:      #1e1208;
-  --muted:     #87756a;
-  --light:     #ede8df;
-  --r:         10px;
-  --rs:        6px;
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f0e8;--white:#fff;--border:#dfd5c8;--brown:#2c1a0e;--brown-mid:#5a3a24;
+  --gold:#9a6a32;--gold-lt:#c49050;--blue:#1a5f8a;--blue-lt:#2d89c8;--blue-pale:#e8f4fb;
+  --green:#3b6332;--green-lt:#6a9e58;--amber:#c47a1a;--red:#a83228;
+  --text:#1e1208;--muted:#87756a;--light:#ede8df;--r:10px;--rs:6px
 }
-
-body {
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  padding: 32px 20px 56px;
-  min-height: 100vh;
-}
-
-/* ── INTRO ── */
-.intro { text-align: center; max-width: 600px; margin: 0 auto 28px; }
-
-.kicker {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-  color: var(--blue-lt); margin-bottom: 12px;
-}
-.kicker::before, .kicker::after { content:''; width:20px; height:1px; background:var(--blue-lt); opacity:.5; }
-
-.intro h1 {
-  font-family: Georgia, serif;
-  font-size: clamp(24px, 4vw, 40px);
-  font-weight: normal; color: var(--brown); line-height: 1.15; margin-bottom: 10px;
-}
-.intro h1 em { font-style: italic; color: var(--blue-lt); }
-.intro p { font-size: 13px; color: var(--muted); line-height: 1.8; }
-
-/* ── SEARCH ── */
-.search-wrap { max-width: 540px; margin: 0 auto 24px; position: relative; }
-.search-row { display: flex; gap: 8px; }
-
-.search-input {
-  flex: 1;
-  background: var(--white); border: 1.5px solid var(--border);
-  color: var(--text); font-family: inherit; font-size: 15px;
-  padding: 12px 15px; border-radius: var(--rs); outline: none;
-  transition: border-color .2s;
-}
-.search-input:focus { border-color: var(--blue-lt); }
-.search-input::placeholder { color: var(--muted); opacity: .45; }
-
-.search-btn {
-  background: var(--blue); border: none; color: #fff;
-  font-family: inherit; font-size: 13px; font-weight: 600;
-  padding: 12px 20px; border-radius: var(--rs); cursor: pointer;
-  white-space: nowrap; transition: background .2s, transform .15s;
-}
-.search-btn:hover { background: var(--blue-lt); transform: translateY(-1px); }
-.search-btn:active { transform: translateY(0); }
-.search-btn:disabled { opacity: .6; cursor: wait; }
-
-.suggestions {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-  background: var(--white); border: 1.5px solid var(--border);
-  border-radius: var(--rs); box-shadow: 0 8px 24px rgba(44,26,14,.12);
-  z-index: 100; max-height: 220px; overflow-y: auto; display: none;
-}
-.suggestions.open { display: block; }
-.sug-item {
-  padding: 10px 15px; cursor: pointer; font-size: 13px;
-  border-bottom: 1px solid var(--border); transition: background .15s;
-}
-.sug-item:last-child { border-bottom: none; }
-.sug-item:hover { background: var(--blue-pale); }
-.sug-item .si-name { font-weight: 600; color: var(--brown); display: block; }
-.sug-item .si-detail { font-size: 11px; color: var(--muted); }
-
-/* ── ERROR / LOADING ── */
-.error {
-  display: none; max-width: 540px; margin: 0 auto 16px;
-  background: #fff0f0; border: 1px solid #f0b8b8;
-  border-left: 3px solid var(--red);
-  border-radius: 0 var(--rs) var(--rs) 0;
-  padding: 11px 14px; font-size: 12px; color: var(--red);
-}
-.error.show { display: block; }
-
-.loading { display: none; text-align: center; padding: 40px 0; color: var(--muted); font-size: 13px; }
-.loading.show { display: block; }
-.spinner {
-  width: 30px; height: 30px;
-  border: 3px solid var(--border); border-top-color: var(--blue-lt);
-  border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── LOC BADGE ── */
-.loc-badge {
-  display: none; text-align: center; margin-bottom: 20px;
-}
-.loc-badge.show { display: block; }
-.loc-name { font-family: Georgia, serif; font-size: 17px; font-style: italic; color: var(--brown); }
-.loc-coords {
-  display: inline-block; font-size: 11px; color: var(--muted);
-  background: var(--light); border: 1px solid var(--border);
-  border-radius: 99px; padding: 2px 10px; margin-left: 8px;
-}
-
-/* ── CONTENT ── */
-.content { display: none; }
-.content.show { display: block; }
-
-/* ── RISK BANNER ── */
-.risk-banner {
-  border-radius: var(--r); padding: 16px 20px;
-  display: flex; align-items: center; gap: 14px;
-  margin-bottom: 16px; border: 1.5px solid transparent; flex-wrap: wrap;
-}
-.risk-banner.muito-seco  { background:#fff0e8; border-color:#f0a060; }
-.risk-banner.seco        { background:#fff8e8; border-color:#f0c060; }
-.risk-banner.normal      { background:var(--blue-pale); border-color:#90cce8; }
-.risk-banner.chuvoso     { background:#e8f4e8; border-color:#90c890; }
-.risk-banner.muito-chuvoso { background:#e8e8f8; border-color:#9090d8; }
-
-.risk-icon { font-size: 28px; flex-shrink: 0; }
-.risk-text .risk-title { font-family: Georgia, serif; font-size: 16px; color: var(--brown); margin-bottom: 2px; }
-.risk-text .risk-title em { font-style: italic; }
-.risk-text .risk-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
-.risk-badge {
-  margin-left: auto; font-size: 10px; font-weight: 700;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  padding: 4px 12px; border-radius: 99px; border: 1.5px solid currentColor; white-space: nowrap;
-}
-.risk-banner.muito-seco  .risk-badge { color:#c04000; }
-.risk-banner.seco        .risk-badge { color:#a06010; }
-.risk-banner.normal      .risk-badge { color:var(--blue); }
-.risk-banner.chuvoso     .risk-badge { color:var(--green); }
-.risk-banner.muito-chuvoso .risk-badge { color:#4040a8; }
-
-/* ── STATS ── */
-.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
-.stat {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 14px 12px; text-align: center;
-  box-shadow: 0 1px 4px rgba(44,26,14,.06); position: relative; overflow: hidden;
-}
-.stat::after {
-  content:''; position:absolute; bottom:0; left:0; right:0;
-  height:3px; background: var(--blue-lt); border-radius: 0 0 var(--r) var(--r);
-}
-.stat.gold::after  { background: var(--gold-lt); }
-.stat.green::after { background: var(--green-lt); }
-.stat.amber::after { background: var(--amber); }
-.stat .st-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-.stat .st-val { font-family: Georgia, serif; font-size: 26px; color: var(--blue-lt); line-height: 1; margin-bottom: 2px; }
-.stat.gold  .st-val { color: var(--gold); }
-.stat.green .st-val { color: var(--green); }
-.stat.amber .st-val { color: var(--amber); }
-.stat .st-unit { font-size: 10px; color: var(--muted); }
-
-/* ── CHART CARD ── */
-.chart-card {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 18px 16px 14px;
-  box-shadow: 0 1px 5px rgba(44,26,14,.06); margin-bottom: 14px;
-}
-.chart-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
-}
-.chart-title { font-family: Georgia, serif; font-size: 15px; font-weight: normal; color: var(--brown); }
-.chart-title em { font-style: italic; color: var(--blue-lt); }
-.legend { display: flex; gap: 12px; flex-wrap: wrap; }
-.leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
-.leg-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
-.chart-wrap { position: relative; height: 240px; }
-
-/* ── FORECAST GRID ── */
-.fc-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; }
-.fc-card {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 12px 8px; text-align: center;
-  position: relative; overflow: hidden;
-}
-.fc-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--green-lt); }
-.fc-month { font-family: Georgia, serif; font-size: 12px; font-style: italic; color: var(--brown); margin-bottom: 4px; }
-.fc-val { font-family: Georgia, serif; font-size: 20px; color: var(--green); line-height: 1; }
-.fc-unit { font-size: 9px; color: var(--muted); margin-bottom: 6px; }
-.fc-icon { font-size: 16px; }
-.fc-diff { font-size: 10px; margin-top: 4px; font-weight: 600; }
-
-/* ── TABLE ── */
-.table-card {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--r); overflow: hidden;
-  box-shadow: 0 1px 5px rgba(44,26,14,.06); margin-bottom: 14px;
-}
-.table-hdr { background: var(--brown); color: #fff; padding: 11px 16px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
-table { width: 100%; border-collapse: collapse; }
-th { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); background: var(--light); }
-td { padding: 9px 14px; font-size: 13px; border-bottom: 1px solid var(--border); color: var(--brown-mid); }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--blue-pale); }
-.td-month { font-family: Georgia, serif; font-style: italic; color: var(--brown); font-size: 13px; }
-.td-val { font-weight: 600; }
-.bar-bg { background: var(--light); border-radius: 99px; height: 6px; overflow: hidden; width: 80px; }
-.bar-fill { height: 100%; border-radius: 99px; background: var(--blue-lt); }
-
-/* ── SOURCE NOTE ── */
-.source-note {
-  background: var(--blue-pale); border: 1px solid #90cce8;
-  border-left: 3px solid var(--blue-lt);
-  border-radius: 0 var(--rs) var(--rs) 0;
-  padding: 10px 14px; font-size: 11px; color: var(--blue); line-height: 1.7; margin-bottom: 12px;
-}
-
-/* ── FOOTNOTE ── */
-.footnote { text-align: center; font-size: 11px; color: var(--muted); line-height: 1.8; }
-.footnote a { color: var(--gold); text-decoration: none; }
-
-/* ── RESPONSIVE ── */
-@media (max-width: 640px) {
-  .stats-row { grid-template-columns: 1fr 1fr; }
-  .fc-grid { grid-template-columns: repeat(3,1fr); }
-  .bar-bg { display: none; }
-}
-@media (max-width: 400px) {
-  body { padding: 20px 12px 40px; }
-  .fc-grid { grid-template-columns: repeat(2,1fr); }
-  .risk-badge { display: none; }
-}
+body{font-family:'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);padding:28px 18px 52px;min-height:100vh}
+.intro{text-align:center;max-width:580px;margin:0 auto 24px}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--blue-lt);margin-bottom:10px}
+.kicker::before,.kicker::after{content:'';width:18px;height:1px;background:var(--blue-lt);opacity:.5}
+.intro h1{font-family:Georgia,serif;font-size:clamp(22px,4vw,38px);font-weight:normal;color:var(--brown);line-height:1.15;margin-bottom:8px}
+.intro h1 em{font-style:italic;color:var(--blue-lt)}
+.intro p{font-size:13px;color:var(--muted);line-height:1.8}
+.search-wrap{max-width:520px;margin:0 auto 20px;position:relative}
+.search-row{display:flex;gap:8px}
+.si{flex:1;background:var(--white);border:1.5px solid var(--border);color:var(--text);font-family:inherit;font-size:15px;padding:11px 14px;border-radius:var(--rs);outline:none;transition:border-color .2s}
+.si:focus{border-color:var(--blue-lt)}
+.si::placeholder{color:var(--muted);opacity:.4}
+.sb{background:var(--blue);border:none;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:11px 18px;border-radius:var(--rs);cursor:pointer;white-space:nowrap;transition:background .2s}
+.sb:hover{background:var(--blue-lt)}
+.sb:disabled{opacity:.6;cursor:wait}
+.sugs{position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:var(--rs);box-shadow:0 8px 20px rgba(44,26,14,.12);z-index:100;max-height:200px;overflow-y:auto;display:none}
+.sugs.open{display:block}
+.si-item{padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background .15s}
+.si-item:last-child{border-bottom:none}
+.si-item:hover{background:var(--blue-pale)}
+.si-name{font-weight:600;color:var(--brown);display:block}
+.si-detail{font-size:11px;color:var(--muted)}
+.err{display:none;max-width:520px;margin:0 auto 14px;background:#fff0f0;border:1px solid #f0b8b8;border-left:3px solid var(--red);border-radius:0 var(--rs) var(--rs) 0;padding:10px 13px;font-size:12px;color:var(--red);line-height:1.6}
+.err.show{display:block}
+.load{display:none;text-align:center;padding:36px 0;color:var(--muted);font-size:13px}
+.load.show{display:block}
+.spin{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue-lt);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.locb{display:none;text-align:center;margin-bottom:16px}
+.locb.show{display:block}
+.loc-name{font-family:Georgia,serif;font-size:16px;font-style:italic;color:var(--brown)}
+.loc-coords{display:inline-block;font-size:11px;color:var(--muted);background:var(--light);border:1px solid var(--border);border-radius:99px;padding:2px 9px;margin-left:6px}
+.content{display:none}
+.content.show{display:block}
+.risk{border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;border:1.5px solid transparent;flex-wrap:wrap}
+.risk.muito-seco{background:#fff0e8;border-color:#f0a060}
+.risk.seco{background:#fff8e8;border-color:#f0c060}
+.risk.normal{background:var(--blue-pale);border-color:#90cce8}
+.risk.chuvoso{background:#e8f4e8;border-color:#90c890}
+.risk.muito-chuvoso{background:#e8e8f8;border-color:#9090d8}
+.risk-icon{font-size:26px;flex-shrink:0}
+.risk-title{font-family:Georgia,serif;font-size:15px;color:var(--brown);margin-bottom:2px}
+.risk-title em{font-style:italic}
+.risk-desc{font-size:12px;color:var(--muted);line-height:1.55}
+.risk-badge{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 11px;border-radius:99px;border:1.5px solid currentColor;white-space:nowrap}
+.risk.muito-seco .risk-badge{color:#c04000}
+.risk.seco .risk-badge{color:#a06010}
+.risk.normal .risk-badge{color:var(--blue)}
+.risk.chuvoso .risk-badge{color:var(--green)}
+.risk.muito-chuvoso .risk-badge{color:#4040a8}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 10px;text-align:center;position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--blue-lt);border-radius:0 0 var(--r) var(--r)}
+.stat.gold::after{background:var(--gold-lt)}
+.stat.green::after{background:var(--green-lt)}
+.stat.amber::after{background:var(--amber)}
+.st-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;font-weight:600}
+.st-val{font-family:Georgia,serif;font-size:24px;color:var(--blue-lt);line-height:1;margin-bottom:2px}
+.stat.gold .st-val{color:var(--gold)}
+.stat.green .st-val{color:var(--green)}
+.stat.amber .st-val{color:var(--amber)}
+.st-unit{font-size:10px;color:var(--muted)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px 12px;margin-bottom:12px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.card-title{font-family:Georgia,serif;font-size:14px;font-weight:normal;color:var(--brown)}
+.card-title em{font-style:italic;color:var(--blue-lt)}
+.legend{display:flex;gap:10px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.chart-wrap{position:relative;height:220px}
+.fc-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.fc-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:10px 7px;text-align:center;position:relative;overflow:hidden}
+.fc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green-lt)}
+.fc-mo{font-family:Georgia,serif;font-size:11px;font-style:italic;color:var(--brown);margin-bottom:3px}
+.fc-val{font-family:Georgia,serif;font-size:18px;color:var(--green);line-height:1}
+.fc-unit{font-size:9px;color:var(--muted);margin-bottom:4px}
+.fc-ico{font-size:14px}
+.fc-diff{font-size:10px;margin-top:3px;font-weight:600}
+.tbl-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.tbl-hdr{background:var(--brown);color:#fff;padding:10px 14px;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--light)}
+td{padding:8px 12px;font-size:13px;border-bottom:1px solid var(--border);color:var(--brown-mid)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--blue-pale)}
+.td-mo{font-family:Georgia,serif;font-style:italic;color:var(--brown);font-size:13px}
+.bar-bg{background:var(--light);border-radius:99px;height:6px;overflow:hidden;width:70px}
+.bar-fill{height:100%;border-radius:99px;background:var(--blue-lt)}
+.src{background:var(--blue-pale);border:1px solid #90cce8;border-left:3px solid var(--blue-lt);border-radius:0 var(--rs) var(--rs) 0;padding:9px 13px;font-size:11px;color:var(--blue);line-height:1.7;margin-bottom:10px}
+.foot{text-align:center;font-size:11px;color:var(--muted);line-height:1.8}
+.foot a{color:var(--gold);text-decoration:none}
+@media(max-width:620px){.stats{grid-template-columns:1fr 1fr}.fc-grid{grid-template-columns:repeat(3,1fr)}.bar-bg{display:none}}
+@media(max-width:380px){body{padding:16px 10px 36px}.fc-grid{grid-template-columns:repeat(2,1fr)}.risk-badge{display:none}}
 </style>
 </head>
 <body>
@@ -257,353 +113,259 @@ tr:hover td { background: var(--blue-pale); }
 <div class="intro">
   <div class="kicker">Kafzin · Dados Climáticos</div>
   <h1>Monitor de <em>Precipitação</em></h1>
-  <p>Histórico de chuvas, previsão para os próximos meses e avaliação de risco para a lavoura.<br/>Busque qualquer cidade do Brasil.</p>
+  <p>Histórico de chuvas, previsão para os próximos meses e avaliação de risco para a lavoura.</p>
 </div>
 
 <div class="search-wrap">
   <div class="search-row">
-    <input type="text" id="inp" class="search-input"
-      placeholder="Digite uma cidade: ex. Americana, Poços de Caldas, Patrocínio…"
-      autocomplete="off" oninput="onInp()" onkeydown="onKey(event)"/>
-    <button class="search-btn" id="btn" onclick="buscar()">🔍 Buscar</button>
+    <input id="inp" class="si" type="text" placeholder="Digite uma cidade: ex. Americana, Poços de Caldas…"
+      autocomplete="off" oninput="onInp()" onkeydown="if(event.key==='Enter'){closeSugs();buscar()}"/>
+    <button id="btn" class="sb" onclick="buscar()">🔍 Buscar</button>
   </div>
-  <div class="suggestions" id="sugs"></div>
+  <div id="sugs" class="sugs"></div>
 </div>
 
-<div class="error" id="err"></div>
-<div class="loading" id="load"><div class="spinner"></div>Carregando dados climáticos…</div>
+<div id="err" class="err"></div>
+<div id="load" class="load"><div class="spin"></div>Carregando dados climáticos…</div>
 
-<div class="loc-badge" id="locbadge">
+<div id="locb" class="locb">
   <span>📍</span>
-  <span class="loc-name" id="locname"></span>
-  <span class="loc-coords" id="loccoords"></span>
+  <span id="locname" class="loc-name"></span>
+  <span id="loccoords" class="loc-coords"></span>
 </div>
 
-<div class="content" id="content">
-
-  <div class="risk-banner" id="risk">
-    <span class="risk-icon" id="risk-icon"></span>
-    <div class="risk-text">
-      <div class="risk-title" id="risk-title"></div>
-      <div class="risk-desc"  id="risk-desc"></div>
-    </div>
-    <span class="risk-badge" id="risk-badge"></span>
+<div id="content" class="content">
+  <div id="risk" class="risk">
+    <span id="r-ico" class="risk-icon"></span>
+    <div><div id="r-title" class="risk-title"></div><div id="r-desc" class="risk-desc"></div></div>
+    <span id="r-badge" class="risk-badge"></span>
   </div>
-
-  <div class="stats-row">
-    <div class="stat">
-      <div class="st-label">Média Anual</div>
-      <div class="st-val" id="s-anual">—</div>
-      <div class="st-unit">mm / ano</div>
-    </div>
-    <div class="stat gold">
-      <div class="st-label">Mês Mais Seco</div>
-      <div class="st-val" id="s-seco">—</div>
-      <div class="st-unit" id="s-seco-m"></div>
-    </div>
-    <div class="stat green">
-      <div class="st-label">Mês Mais Chuvoso</div>
-      <div class="st-val" id="s-chuv">—</div>
-      <div class="st-unit" id="s-chuv-m"></div>
-    </div>
-    <div class="stat amber">
-      <div class="st-label">Próx. 3 Meses</div>
-      <div class="st-val" id="s-prev">—</div>
-      <div class="st-unit">mm previstos</div>
-    </div>
+  <div class="stats">
+    <div class="stat"><div class="st-lbl">Média Anual</div><div id="s-anual" class="st-val">—</div><div class="st-unit">mm/ano</div></div>
+    <div class="stat gold"><div class="st-lbl">Mês Mais Seco</div><div id="s-seco" class="st-val">—</div><div id="s-seco-m" class="st-unit">—</div></div>
+    <div class="stat green"><div class="st-lbl">Mês Mais Chuvoso</div><div id="s-chuv" class="st-val">—</div><div id="s-chuv-m" class="st-unit">—</div></div>
+    <div class="stat amber"><div class="st-lbl">Próx. 3 Meses</div><div id="s-prev" class="st-val">—</div><div class="st-unit">mm previstos</div></div>
   </div>
-
-  <div class="chart-card">
-    <div class="chart-header">
-      <div class="chart-title">Histórico & <em>Previsão</em> — Precipitação Mensal</div>
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">Histórico & <em>Previsão</em></div>
       <div class="legend">
-        <div class="leg-item"><div class="leg-dot" style="background:#2d89c8"></div> Último ano</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#2d89c8;opacity:.4"></div> Média 5 anos</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#6a9e58"></div> Previsão</div>
+        <div class="leg"><div class="leg-dot" style="background:#2d89c8"></div>Último ano</div>
+        <div class="leg"><div class="leg-dot" style="background:#2d89c8;opacity:.35"></div>Média 5 anos</div>
+        <div class="leg"><div class="leg-dot" style="background:#6a9e58"></div>Previsão</div>
       </div>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
   </div>
-
-  <div class="chart-card">
-    <div class="chart-header"><div class="chart-title">Previsão — <em>Próximos 6 Meses</em></div></div>
-    <div class="fc-grid" id="fcgrid"></div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Previsão — <em>Próximos 6 Meses</em></div></div>
+    <div id="fcgrid" class="fc-grid"></div>
   </div>
-
-  <div class="table-card">
-    <div class="table-hdr">Detalhamento — Últimos 12 Meses</div>
-    <table><thead><tr>
-      <th>Mês</th><th>Precipitação</th><th>vs. Média Histórica</th><th>Distribuição</th>
-    </tr></thead>
+  <div class="tbl-card">
+    <div class="tbl-hdr">Detalhamento — Últimos 12 Meses</div>
+    <table><thead><tr><th>Mês</th><th>Chuva</th><th>vs. Média</th><th>Barra</th></tr></thead>
     <tbody id="tbody"></tbody></table>
   </div>
-
-  <div class="source-note">
-    📡 <strong>Fonte:</strong> Open-Meteo API — ERA5 (histórico reanalisado) + modelo global (previsão).
-    Média histórica calculada sobre os últimos 5 anos completos.
-  </div>
-
+  <div class="src">📡 <strong>Fonte:</strong> Open-Meteo API — ERA5 reanalysis (histórico) + modelo global (previsão).</div>
 </div>
 
-<div class="footnote">
-  ☁️ Dados em tempo real via <strong>Open-Meteo</strong> · Ferramenta informativa para planejamento agrícola<br/>
-  <a href="https://kafzin.com" target="_blank">kafzin.com</a> — Conectando produtores brasileiros ao mercado europeu
-</div>
+<div class="foot">☁️ Dados via <strong>Open-Meteo</strong> · Ferramenta para planejamento agrícola<br/><a href="https://kafzin.com" target="_blank">kafzin.com</a></div>
 
 <script>
-const MESES      = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MO  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MOF = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+let CH = null, SUGS = [], SEL = null, TMR = null;
 
-let chart = null, sugsData = [], sel = null, debounce = null;
+/* ── helpers ── */
+const $  = id => document.getElementById(id);
+const showLoad = v => { $('load').classList.toggle('show',v); $('btn').disabled=v; };
+const showContent = v => $('content').classList.toggle('show',v);
+const setErr = m => { $('err').innerHTML=m; $('err').classList.toggle('show',!!m); };
+const closeSugs = () => $('sugs').classList.remove('open');
+document.addEventListener('click', e => { if(!e.target.closest('.search-wrap')) closeSugs(); });
 
-/* ── GEO ── */
+/* ── geo ── */
 async function geo(q) {
-  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=10&language=pt&format=json`);
-  if (!r.ok) throw new Error('geo');
+  const url = 'https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=10&language=pt&format=json';
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Geocoding HTTP '+r.status);
   const d = await r.json();
-  const all = d.results || [];
-  const br = all.filter(x => x.country_code === 'BR');
+  const all = d.results||[];
+  const br = all.filter(x=>x.country_code==='BR');
   return br.length ? br : all;
 }
 
 function onInp() {
-  clearTimeout(debounce);
-  const v = document.getElementById('inp').value.trim();
-  if (v.length < 2) { closeSugs(); return; }
-  debounce = setTimeout(async () => {
-    try { sugsData = await geo(v); showSugs(sugsData); } catch(e) {}
-  }, 320);
+  clearTimeout(TMR);
+  const v = $('inp').value.trim();
+  if(v.length<2){closeSugs();return;}
+  TMR = setTimeout(async()=>{
+    try{ SUGS=await geo(v); showSugs(SUGS); }catch(e){}
+  },320);
 }
 
-function onKey(e) { if (e.key === 'Enter') { closeSugs(); buscar(); } }
-
-function showSugs(items) {
-  const el = document.getElementById('sugs');
-  if (!items.length) { closeSugs(); return; }
-  el.innerHTML = items.slice(0,6).map((r,i) => {
-    const parts = [r.admin2, r.admin1, r.country].filter(Boolean).join(', ');
-    return `<div class="sug-item" onclick="pickSug(${i})">
-      <span class="si-name">${r.name}</span>
-      <span class="si-detail">${parts}</span>
-    </div>`;
+function showSugs(items){
+  const el=$('sugs');
+  if(!items.length){closeSugs();return;}
+  el.innerHTML=items.slice(0,6).map((r,i)=>{
+    const d=[r.admin2,r.admin1,r.country].filter(Boolean).join(', ');
+    return `<div class="si-item" onclick="pickSug(${i})"><span class="si-name">${r.name}</span><span class="si-detail">${d}</span></div>`;
   }).join('');
   el.classList.add('open');
 }
 
-function closeSugs() { document.getElementById('sugs').classList.remove('open'); }
-
-function pickSug(i) {
-  sel = sugsData[i];
-  document.getElementById('inp').value = [sel.name, sel.admin1].filter(Boolean).join(', ');
-  closeSugs();
-  load(sel);
+function pickSug(i){
+  SEL=SUGS[i];
+  $('inp').value=[SEL.name,SEL.admin1].filter(Boolean).join(', ');
+  closeSugs(); loadClimate(SEL);
 }
 
-async function buscar() {
-  const v = document.getElementById('inp').value.trim();
-  if (!v) return;
-  closeSugs();
-  setErr('');
-  showLoad(true);
-  try {
-    let res = await geo(v + ' Brasil');
-    if (!res.length) res = await geo(v);
+async function buscar(){
+  const v=$('inp').value.trim(); if(!v)return;
+  closeSugs(); setErr(''); showLoad(true);
+  try{
+    let res=await geo(v+' Brasil');
+    if(!res.length) res=await geo(v);
     showLoad(false);
-    if (!res.length) { setErr('Cidade não encontrada. Tente incluir o estado: ex. "Americana, São Paulo"'); return; }
-    if (res.length > 1) { sugsData = res; showSugs(res); }
-    else { sel = res[0]; load(sel); }
-  } catch(e) {
+    if(!res.length){setErr('Cidade não encontrada. Tente incluir o estado: ex. "Americana, São Paulo"');return;}
+    if(res.length>1){SUGS=res;showSugs(res);}
+    else{SEL=res[0];loadClimate(SEL);}
+  }catch(e){
     showLoad(false);
-    setErr('Erro de conexão com a API. Verifique sua conexão e tente novamente.');
+    setErr('Erro de conexão: '+e.message);
   }
 }
 
-/* ── CLIMATE DATA ── */
-async function load(loc) {
-  showLoad(true);
-  setErr('');
-  showContent(false);
-  try {
-    const lat = loc.latitude.toFixed(4), lon = loc.longitude.toFixed(4);
-    const now = new Date();
+/* ── climate ── */
+async function loadClimate(loc){
+  showLoad(true); setErr(''); showContent(false);
+  try{
+    const lat=loc.latitude.toFixed(4), lon=loc.longitude.toFixed(4);
+    const now=new Date();
 
-    const histEnd   = new Date(now); histEnd.setDate(1); histEnd.setDate(0);
-    const histStart = new Date(histEnd); histStart.setFullYear(histStart.getFullYear() - 5);
-    const fmt = d => d.toISOString().slice(0,10);
+    // Archive end: first day of current month minus 5 days for lag safety → use previous month end
+    const archEnd=new Date(now.getFullYear(), now.getMonth(), 0); // last day of prev month
+    const archStart=new Date(archEnd.getFullYear()-5, archEnd.getMonth(), 1);
+    const fmt=d=>d.toISOString().slice(0,10);
 
-    const [hRes, pRes] = await Promise.all([
-      fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${fmt(histStart)}&end_date=${fmt(histEnd)}&monthly=precipitation_sum&timezone=America%2FSao_Paulo`),
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&timezone=America%2FSao_Paulo&forecast_days=180`)
-    ]);
+    const aUrl=`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${fmt(archStart)}&end_date=${fmt(archEnd)}&daily=precipitation_sum&timezone=America%2FSao_Paulo`;
+    const fUrl=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&timezone=America%2FSao_Paulo&forecast_days=180`;
 
-    if (!hRes.ok || !pRes.ok) throw new Error('api');
-    const [hData, pData] = await Promise.all([hRes.json(), pRes.json()]);
-    if (hData.error || pData.error) throw new Error('api_err');
+    const [aRes,fRes]=await Promise.all([fetch(aUrl),fetch(fUrl)]);
 
-    process(loc, hData, pData, now);
+    if(!aRes.ok){ const t=await aRes.text(); throw new Error('Archive '+aRes.status+': '+t.slice(0,120)); }
+    if(!fRes.ok){ const t=await fRes.text(); throw new Error('Forecast '+fRes.status+': '+t.slice(0,120)); }
+
+    const [aData,fData]=await Promise.all([aRes.json(),fRes.json()]);
+    if(aData.error) throw new Error('Archive API: '+(aData.reason||JSON.stringify(aData)));
+    if(fData.error) throw new Error('Forecast API: '+(fData.reason||JSON.stringify(fData)));
+
+    processData(loc,aData,fData,now);
+    showLoad(false); showContent(true);
+    // location badge
+    const adm=[loc.admin1].filter(Boolean).join(', ');
+    $('locname').textContent=loc.name+(adm?', '+adm:'');
+    $('loccoords').textContent=`${loc.latitude.toFixed(3)}°, ${loc.longitude.toFixed(3)}°`;
+    $('locb').classList.add('show');
+  }catch(e){
     showLoad(false);
-    showContent(true);
-    showLocBadge(loc);
-  } catch(e) {
-    showLoad(false);
-    setErr('Erro ao carregar dados climáticos. Tente novamente em instantes.');
+    console.error('[kafzin-chuvas]',e.message);
+    setErr('❌ Erro: '+e.message);
   }
 }
 
-function process(loc, hData, pData, now) {
-  const hTimes = hData.monthly?.time || [];
-  const hVals  = hData.monthly?.precipitation_sum || [];
-  const byYM   = {};
-  hTimes.forEach((t,i) => { byYM[t] = hVals[i] || 0; });
+function processData(loc,aData,fData,now){
+  // Aggregate archive daily → monthly map
+  const aDays=aData.daily?.time||[], aVals=aData.daily?.precipitation_sum||[];
+  const archMon={};
+  aDays.forEach((t,i)=>{ const k=t.slice(0,7); archMon[k]=(archMon[k]||0)+(aVals[i]||0); });
 
-  /* last 12 months */
-  const last12 = [];
-  for (let m = 11; m >= 0; m--) {
-    const d = new Date(now); d.setDate(1); d.setMonth(d.getMonth() - m - 1);
-    const key = d.toISOString().slice(0,7);
-    last12.push({ key, month: d.getMonth(), year: d.getFullYear(), val: byYM[key] ?? 0 });
+  // Last 12 months (ending at prev month)
+  const last12=[];
+  for(let m=11;m>=0;m--){
+    const d=new Date(now.getFullYear(),now.getMonth()-1-m,1);
+    const k=d.toISOString().slice(0,7);
+    last12.push({k,month:d.getMonth(),year:d.getFullYear(),val:Math.round(archMon[k]||0)});
   }
 
-  /* 5-year monthly average */
-  const avg = Array(12).fill(0), cnt = Array(12).fill(0);
-  hTimes.forEach((t,i) => {
-    const mo = parseInt(t.slice(5,7)) - 1;
-    const yr = parseInt(t.slice(0,4));
-    const ny = now.getFullYear();
-    if (ny - yr >= 1 && ny - yr <= 5) { avg[mo] += (hVals[i] || 0); cnt[mo]++; }
+  // 5-year monthly avg
+  const avg=Array(12).fill(0), cnt=Array(12).fill(0);
+  Object.entries(archMon).forEach(([k,v])=>{
+    const yr=+k.slice(0,4), mo=+k.slice(5,7)-1, ny=now.getFullYear();
+    if(ny-yr>=1&&ny-yr<=5){avg[mo]+=v;cnt[mo]++;}
   });
-  avg.forEach((v,i) => { avg[i] = cnt[i] ? Math.round(v / cnt[i]) : 0; });
+  avg.forEach((_,i)=>{ avg[i]=cnt[i]?Math.round(avg[i]/cnt[i]):0; });
 
-  /* forecast aggregated to monthly */
-  const pDays = pData.daily?.time || [];
-  const pDayV = pData.daily?.precipitation_sum || [];
-  const pMon  = {};
-  pDays.forEach((t,i) => {
-    const k = t.slice(0,7);
-    pMon[k] = (pMon[k] || 0) + (pDayV[i] || 0);
-  });
+  // Forecast daily → monthly
+  const fDays=fData.daily?.time||[], fVals=fData.daily?.precipitation_sum||[];
+  const fMon={};
+  fDays.forEach((t,i)=>{ const k=t.slice(0,7); fMon[k]=(fMon[k]||0)+(fVals[i]||0); });
 
-  /* next 6 months */
-  const fc6 = [];
-  for (let m = 0; m < 6; m++) {
-    const d = new Date(now); d.setDate(1); d.setMonth(d.getMonth() + m);
-    const k = d.toISOString().slice(0,7);
-    fc6.push({ key: k, month: d.getMonth(), year: d.getFullYear(), val: Math.round(pMon[k] || avg[d.getMonth()]) });
+  // Next 6 months
+  const fc6=[];
+  for(let m=0;m<6;m++){
+    const d=new Date(now.getFullYear(),now.getMonth()+m,1);
+    const k=d.toISOString().slice(0,7);
+    fc6.push({k,month:d.getMonth(),year:d.getFullYear(),val:Math.round(fMon[k]||avg[d.getMonth()])});
   }
 
-  /* risk */
-  const fcAvg  = fc6.reduce((a,x) => a + x.val, 0) / 6;
-  const histAv = avg.reduce((a,b) => a+b, 0) / 12;
-  const ratio  = fcAvg / (histAv || 1);
-  let rc, ri, rt, rd, rb;
-  if      (ratio < 0.5)  { rc='muito-seco';     ri='🔥'; rb='Muito Seco';     rt='Risco de <em>Seca Severa</em>';            rd='Previsão muito abaixo da média. Risco elevado — planeje irrigação.'; }
-  else if (ratio < 0.8)  { rc='seco';           ri='☀️'; rb='Período Seco';   rt='Período <em>Mais Seco</em> que o Normal';  rd='Precipitação abaixo da média. Monitore estresse hídrico.'; }
-  else if (ratio < 1.25) { rc='normal';         ri='🌤️'; rb='Normal';         rt='Precipitação <em>dentro do Padrão</em>';   rd='Previsão alinhada com a média histórica. Condições favoráveis.'; }
-  else if (ratio < 1.6)  { rc='chuvoso';        ri='🌧️'; rb='Chuvoso';        rt='Período <em>Acima da Média</em>';          rd='Acima do normal. Atenção ao manejo de fungos e drenagem.'; }
-  else                   { rc='muito-chuvoso';  ri='⛈️'; rb='Muito Chuvoso';  rt='Risco de <em>Excesso de Chuva</em>';       rd='Muito acima da média. Risco de erosão e doenças fúngicas.'; }
+  // Risk
+  const fcA=fc6.reduce((a,x)=>a+x.val,0)/6;
+  const hiA=avg.reduce((a,b)=>a+b,0)/12;
+  const rat=fcA/(hiA||1);
+  let rc,ri,rt,rd,rb;
+  if(rat<0.5)      {rc='muito-seco';  ri='🔥';rb='Muito Seco';   rt='Risco de <em>Seca Severa</em>';          rd='Previsão muito abaixo da média. Planeje irrigação.'}
+  else if(rat<0.8) {rc='seco';        ri='☀️'; rb='Período Seco'; rt='Período <em>Mais Seco</em> que o Normal'; rd='Abaixo da média. Monitore o estresse hídrico.'}
+  else if(rat<1.25){rc='normal';      ri='🌤️';rb='Normal';        rt='Precipitação <em>dentro do Padrão</em>';  rd='Alinhado com a média histórica. Condições favoráveis.'}
+  else if(rat<1.6) {rc='chuvoso';     ri='🌧️';rb='Chuvoso';       rt='Período <em>Acima da Média</em>';         rd='Acima do normal. Atenção a fungos e drenagem.'}
+  else             {rc='muito-chuvoso';ri='⛈️';rb='Muito Chuvoso';rt='Risco de <em>Excesso de Chuva</em>';      rd='Muito acima da média. Risco de erosão e doenças.'}
 
-  /* stats */
-  const maxM = avg.indexOf(Math.max(...avg));
-  const minM = avg.indexOf(Math.min(...avg));
-  const ySum = Math.round(avg.reduce((a,b)=>a+b,0));
-  const p3   = Math.round(fc6.slice(0,3).reduce((a,x)=>a+x.val,0));
-
-  render({ last12, fc6, avg, maxM, minM, ySum, p3, rc, ri, rt, rd, rb });
+  const maxM=avg.indexOf(Math.max(...avg)), minM=avg.indexOf(Math.min(...avg));
+  renderAll({last12,fc6,avg,maxM,minM,ySum:Math.round(avg.reduce((a,b)=>a+b,0)),p3:Math.round(fc6.slice(0,3).reduce((a,x)=>a+x.val,0)),rc,ri,rt,rd,rb});
 }
 
-function render({ last12, fc6, avg, maxM, minM, ySum, p3, rc, ri, rt, rd, rb }) {
-
-  /* risk */
-  const rEl = document.getElementById('risk');
-  rEl.className = 'risk-banner ' + rc;
-  document.getElementById('risk-icon').textContent  = ri;
-  document.getElementById('risk-title').innerHTML   = rt;
-  document.getElementById('risk-desc').textContent  = rd;
-  document.getElementById('risk-badge').textContent = rb;
-
-  /* stats */
-  document.getElementById('s-anual').textContent  = ySum;
-  document.getElementById('s-seco').textContent   = Math.round(avg[minM]);
-  document.getElementById('s-seco-m').textContent = MESES[minM];
-  document.getElementById('s-chuv').textContent   = Math.round(avg[maxM]);
-  document.getElementById('s-chuv-m').textContent = MESES[maxM];
-  document.getElementById('s-prev').textContent   = p3;
-
-  /* chart */
-  const labels   = [...last12.map(x => MESES[x.month]+' '+String(x.year).slice(2)), ...fc6.map(x => MESES[x.month]+' '+String(x.year).slice(2))];
-  const histDs   = [...last12.map(x => x.val), ...Array(6).fill(null)];
-  const prevDs   = [...Array(12).fill(null), ...fc6.map(x => x.val)];
-  const avgDs    = [...last12.map(x => avg[x.month]), ...fc6.map(x => avg[x.month])];
-
-  if (chart) { chart.destroy(); chart = null; }
-  const ctx = document.getElementById('chart').getContext('2d');
-  chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Histórico',   data: histDs, backgroundColor: 'rgba(45,137,200,0.75)', borderColor: '#2d89c8', borderWidth: 1, borderRadius: 3, order: 2 },
-        { label: 'Previsão',    data: prevDs, backgroundColor: 'rgba(106,158,88,0.75)',  borderColor: '#6a9e58', borderWidth: 1, borderRadius: 3, order: 2 },
-        { label: 'Média 5 anos',data: avgDs,  type:'line', borderColor:'rgba(45,137,200,.45)', borderWidth:2, borderDash:[5,4], pointRadius:2, fill:false, tension:.4, order:1 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' '+(c.parsed.y!==null ? Math.round(c.parsed.y)+' mm' : '—') } } },
-      scales: {
-        x: { grid:{color:'rgba(0,0,0,.05)'}, ticks:{font:{size:10},color:'#87756a',maxRotation:45} },
-        y: { grid:{color:'rgba(0,0,0,.06)'}, beginAtZero:true, ticks:{font:{size:10},color:'#87756a',callback:v=>v+' mm'} }
+function renderAll({last12,fc6,avg,maxM,minM,ySum,p3,rc,ri,rt,rd,rb}){
+  // risk
+  $('risk').className='risk '+rc;
+  $('r-ico').textContent=ri; $('r-title').innerHTML=rt; $('r-desc').textContent=rd; $('r-badge').textContent=rb;
+  // stats
+  $('s-anual').textContent=ySum; $('s-seco').textContent=avg[minM]; $('s-seco-m').textContent=MO[minM];
+  $('s-chuv').textContent=avg[maxM]; $('s-chuv-m').textContent=MO[maxM]; $('s-prev').textContent=p3;
+  // chart
+  const labels=[...last12.map(x=>MO[x.month]+' '+String(x.year).slice(2)),...fc6.map(x=>MO[x.month]+' '+String(x.year).slice(2))];
+  const hDs=[...last12.map(x=>x.val),...Array(6).fill(null)];
+  const pDs=[...Array(12).fill(null),...fc6.map(x=>x.val)];
+  const aDs=[...last12.map(x=>avg[x.month]),...fc6.map(x=>avg[x.month])];
+  if(CH){CH.destroy();CH=null;}
+  CH=new Chart($('chart').getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Histórico',data:hDs,backgroundColor:'rgba(45,137,200,.72)',borderColor:'#2d89c8',borderWidth:1,borderRadius:3,order:2},
+      {label:'Previsão', data:pDs,backgroundColor:'rgba(106,158,88,.72)', borderColor:'#6a9e58',borderWidth:1,borderRadius:3,order:2},
+      {label:'Média',    data:aDs,type:'line',borderColor:'rgba(45,137,200,.4)',borderWidth:2,borderDash:[5,4],pointRadius:2,fill:false,tension:.4,order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+(c.parsed.y!==null?Math.round(c.parsed.y)+' mm':'—')}}},
+      scales:{
+        x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},color:'#87756a',maxRotation:45}},
+        y:{grid:{color:'rgba(0,0,0,.06)'},beginAtZero:true,ticks:{font:{size:10},color:'#87756a',callback:v=>v+' mm'}}
       }
     }
   });
-
-  /* forecast cards */
-  document.getElementById('fcgrid').innerHTML = fc6.map(f => {
-    const a = avg[f.month];
-    const pct = a ? Math.round((f.val/a-1)*100) : 0;
-    const icon = f.val > a*1.3 ? '⛈️' : f.val > a*.9 ? '🌧️' : f.val > a*.5 ? '🌤️' : '☀️';
-    const dCol = pct>20 ? '#3b6332' : pct<-20 ? '#a83228' : '#87756a';
-    return `<div class="fc-card">
-      <div class="fc-month">${MESES_FULL[f.month]}</div>
-      <div class="fc-val">${f.val}</div>
-      <div class="fc-unit">mm</div>
-      <div class="fc-icon">${icon}</div>
-      <div class="fc-diff" style="color:${dCol}">${pct>=0?'+':''}${pct}% vs média</div>
-    </div>`;
+  // forecast cards
+  $('fcgrid').innerHTML=fc6.map(f=>{
+    const a=avg[f.month],pct=a?Math.round((f.val/a-1)*100):0;
+    const ico=f.val>a*1.3?'⛈️':f.val>a*.9?'🌧️':f.val>a*.5?'🌤️':'☀️';
+    const dc=pct>20?'#3b6332':pct<-20?'#a83228':'#87756a';
+    return `<div class="fc-card"><div class="fc-mo">${MOF[f.month]}</div><div class="fc-val">${f.val}</div><div class="fc-unit">mm</div><div class="fc-ico">${ico}</div><div class="fc-diff" style="color:${dc}">${pct>=0?'+':''}${pct}%</div></div>`;
   }).join('');
-
-  /* table */
-  const maxV = Math.max(...last12.map(x => x.val), 1);
-  document.getElementById('tbody').innerHTML = last12.map(x => {
-    const a = avg[x.month], diff = a ? Math.round((x.val/a-1)*100) : 0;
-    const dCol = diff>20 ? '#3b6332' : diff<-20 ? '#a83228' : '#87756a';
-    const pct  = Math.round((x.val/maxV)*100);
-    return `<tr>
-      <td class="td-month">${MESES_FULL[x.month]} ${x.year}</td>
-      <td class="td-val">${Math.round(x.val)} mm</td>
-      <td style="color:${dCol};font-weight:600;font-size:12px">${diff>=0?'+':''}${diff}% <span style="color:var(--muted);font-weight:300">(média ${a} mm)</span></td>
-      <td><div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div></td>
-    </tr>`;
+  // table
+  const mx=Math.max(...last12.map(x=>x.val),1);
+  $('tbody').innerHTML=last12.map(x=>{
+    const a=avg[x.month],df=a?Math.round((x.val/a-1)*100):0,dc=df>20?'#3b6332':df<-20?'#a83228':'#87756a';
+    return `<tr><td class="td-mo">${MOF[x.month]} ${x.year}</td><td style="font-weight:600">${x.val} mm</td><td style="color:${dc};font-weight:600;font-size:12px">${df>=0?'+':''}${df}% <span style="color:var(--muted);font-weight:300">(média ${a})</span></td><td><div class="bar-bg"><div class="bar-fill" style="width:${Math.round(x.val/mx*100)}%"></div></div></td></tr>`;
   }).join('');
 }
-
-/* ── UI HELPERS ── */
-function showLoad(v) {
-  document.getElementById('load').classList.toggle('show', v);
-  document.getElementById('btn').disabled = v;
-}
-function showContent(v) { document.getElementById('content').classList.toggle('show', v); }
-function setErr(m) {
-  const e = document.getElementById('err');
-  e.textContent = m; e.classList.toggle('show', !!m);
-}
-function showLocBadge(loc) {
-  const admin = [loc.admin1].filter(Boolean).join(', ');
-  document.getElementById('locname').textContent   = loc.name + (admin ? ', ' + admin : '');
-  document.getElementById('loccoords').textContent = `${loc.latitude?.toFixed(3)}°, ${loc.longitude?.toFixed(3)}°`;
-  document.getElementById('locbadge').classList.add('show');
-}
-document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) closeSugs(); });
 </script>
 </body>
 </html>
