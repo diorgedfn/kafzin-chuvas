@@ -427,33 +427,18 @@ async function load(loc) {
     const lat = loc.latitude.toFixed(4), lon = loc.longitude.toFixed(4);
     const now = new Date();
 
-    // histEnd = last day of 2 months ago (archive API has ~5 day lag, use 2-month buffer)
-    const histEnd = new Date(now);
-    histEnd.setDate(1);
-    histEnd.setMonth(histEnd.getMonth() - 2);
-    // last day of that month
-    histEnd.setMonth(histEnd.getMonth() + 1);
-    histEnd.setDate(0);
+    const histEnd   = new Date(now); histEnd.setDate(1); histEnd.setDate(0);
+    const histStart = new Date(histEnd); histStart.setFullYear(histStart.getFullYear() - 5);
+    const fmt = d => d.toISOString().slice(0,10);
 
-    // histStart = 5 years before histEnd
-    const histStart = new Date(histEnd);
-    histStart.setFullYear(histStart.getFullYear() - 5);
+    const [hRes, pRes] = await Promise.all([
+      fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${fmt(histStart)}&end_date=${fmt(histEnd)}&monthly=precipitation_sum&timezone=America%2FSao_Paulo`),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&timezone=America%2FSao_Paulo&forecast_days=180`)
+    ]);
 
-    const fmt = d => d.toISOString().slice(0, 10);
-
-    // Use daily=precipitation_sum (more universally supported than monthly)
-    const archiveUrl  = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${fmt(histStart)}&end_date=${fmt(histEnd)}&daily=precipitation_sum&timezone=America%2FSao_Paulo`;
-    const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&timezone=America%2FSao_Paulo&forecast_days=180`;
-
-    const [hRes, pRes] = await Promise.all([fetch(archiveUrl), fetch(forecastUrl)]);
-
-    // Collect error details for debugging
-    if (!hRes.ok) throw new Error(`Archive API ${hRes.status}: ${await hRes.text()}`);
-    if (!pRes.ok) throw new Error(`Forecast API ${pRes.status}: ${await pRes.text()}`);
-
+    if (!hRes.ok || !pRes.ok) throw new Error('api');
     const [hData, pData] = await Promise.all([hRes.json(), pRes.json()]);
-    if (hData.error) throw new Error('Archive: ' + (hData.reason || 'unknown'));
-    if (pData.error) throw new Error('Forecast: ' + (pData.reason || 'unknown'));
+    if (hData.error || pData.error) throw new Error('api_err');
 
     process(loc, hData, pData, now);
     showLoad(false);
@@ -461,45 +446,40 @@ async function load(loc) {
     showLocBadge(loc);
   } catch(e) {
     showLoad(false);
-    console.error('Kafzin chuvas error:', e.message);
-    setErr('Erro ao carregar dados climáticos: ' + e.message + '. Tente outra cidade ou aguarde instantes.');
+    setErr('Erro ao carregar dados climáticos. Tente novamente em instantes.');
   }
 }
 
 function process(loc, hData, pData, now) {
-  // Aggregate archive daily → monthly
-  const hDays = hData.daily?.time || [];
-  const hDayV = hData.daily?.precipitation_sum || [];
-  const archiveMon = {};  // key: "YYYY-MM" → total mm
-  hDays.forEach((t, i) => {
-    const key = t.slice(0, 7);
-    archiveMon[key] = (archiveMon[key] || 0) + (hDayV[i] || 0);
-  });
+  const hTimes = hData.monthly?.time || [];
+  const hVals  = hData.monthly?.precipitation_sum || [];
+  const byYM   = {};
+  hTimes.forEach((t,i) => { byYM[t] = hVals[i] || 0; });
 
-  /* last 12 months — offset by 2 to align with archive end (2 months back) */
+  /* last 12 months */
   const last12 = [];
   for (let m = 11; m >= 0; m--) {
-    const d = new Date(now); d.setDate(1); d.setMonth(d.getMonth() - m - 2);
-    const key = d.toISOString().slice(0, 7);
-    last12.push({ key, month: d.getMonth(), year: d.getFullYear(), val: Math.round(archiveMon[key] ?? 0) });
+    const d = new Date(now); d.setDate(1); d.setMonth(d.getMonth() - m - 1);
+    const key = d.toISOString().slice(0,7);
+    last12.push({ key, month: d.getMonth(), year: d.getFullYear(), val: byYM[key] ?? 0 });
   }
 
-  /* 5-year monthly average from archive */
+  /* 5-year monthly average */
   const avg = Array(12).fill(0), cnt = Array(12).fill(0);
-  Object.entries(archiveMon).forEach(([key, val]) => {
-    const yr = parseInt(key.slice(0, 4));
-    const mo = parseInt(key.slice(5, 7)) - 1;
+  hTimes.forEach((t,i) => {
+    const mo = parseInt(t.slice(5,7)) - 1;
+    const yr = parseInt(t.slice(0,4));
     const ny = now.getFullYear();
-    if (ny - yr >= 1 && ny - yr <= 5) { avg[mo] += val; cnt[mo]++; }
+    if (ny - yr >= 1 && ny - yr <= 5) { avg[mo] += (hVals[i] || 0); cnt[mo]++; }
   });
-  avg.forEach((v, i) => { avg[i] = cnt[i] ? Math.round(v / cnt[i]) : 0; });
+  avg.forEach((v,i) => { avg[i] = cnt[i] ? Math.round(v / cnt[i]) : 0; });
 
-  /* forecast daily → monthly */
+  /* forecast aggregated to monthly */
   const pDays = pData.daily?.time || [];
   const pDayV = pData.daily?.precipitation_sum || [];
   const pMon  = {};
-  pDays.forEach((t, i) => {
-    const k = t.slice(0, 7);
+  pDays.forEach((t,i) => {
+    const k = t.slice(0,7);
     pMon[k] = (pMon[k] || 0) + (pDayV[i] || 0);
   });
 
